@@ -1,0 +1,127 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>EduResource Manager</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Login Screen -->
+    <div id="login" class="login">
+        <h1>EduResource Manager</h1>
+        <input type="text" id="username" placeholder="Username">
+        <input type="password" id="password" placeholder="Password">
+        <button onclick="login()">Login</button>
+    </div>
+
+    <!-- Dashboard -->
+    <div id="dashboard" class="dashboard hidden">
+        <div class="header">
+            <h1>Welcome, <span id="userRole"></span>!</h1>
+            <button onclick="logout()">Logout</button>
+        </div>
+
+        <!-- Task/Classroom Assignment -->
+        <div id="taskSection" class="section hidden">
+            <h2>Assign Task/Classroom</h2>
+            <input type="text" id="taskName" placeholder="Task Name">
+            <input type="text" id="taskClassroom" placeholder="Classroom">
+            <button onclick="assignTask()">Assign</button>
+            <table id="taskTable"><tr><th>Task</th><th>Classroom</th><th>Actions</th></tr></table>
+        </div>
+
+        <!-- Schedule/Calendar View -->
+        <div id="scheduleSection" class="section hidden">
+            <h2>Schedule View</h2>
+            <table id="scheduleTable">
+                <tr><th>Class</th><th>Teacher</th><th>Room</th><th>Start Time</th><th>End Time</th><th>Actions</th></tr>
+            </table>
+            <input type="text" id="schedClass" placeholder="Class Name">
+            <input type="text" id="schedTeacher" placeholder="Teacher">
+            <input type="text" id="schedRoom" placeholder="Room">
+            <input type="time" id="schedStartTime">
+            <input type="time" id="schedEndTime">
+            <button onclick="addSchedule()">Add Schedule</button>
+        </div>
+
+        <!-- CRUD: Students -->
+        <div id="studentSection" class="section hidden">
+            <h2>Manage Students</h2>
+            <input type="text" id="studentName" placeholder="Student Name">
+            <input type="text" id="studentID" placeholder="Student ID">
+            <input type="text" id="studentRoom" placeholder="Room">
+            <button onclick="addStudent()">Add</button>
+            <table id="studentTable"><tr><th>Name</th><th>ID</th><th>Room</th><th>Actions</th></tr></table>
+        </div>
+
+        <!-- CRUD: Teachers (Admin Only) -->
+        <div id="teacherSection" class="section hidden">
+            <h2>Manage Teachers</h2>
+            <input type="text" id="teacherName" placeholder="Teacher Name">
+            <button onclick="addTeacher()">Add</button>
+            <table id="teacherTable"><tr><th>Teacher</th><th>Actions</th></tr></table>
+        </div>
+
+        <!-- CRUD: Resources (Admin Only) -->
+        <div id="resourceSection" class="section hidden">
+            <h2>Manage Resources</h2>
+            <input type="text" id="resourceName" placeholder="Resource Name">
+            <button onclick="addResource()">Add</button>
+            <table id="resourceTable"><tr><th>Resource</th><th>Actions</th></tr></table>
+        </div>
+
+        <!-- Room Assignments -->
+        <div id="roomAssignmentSection" class="section hidden">
+            <h2>Room Assignments</h2>
+            <table id="roomAssignmentTable"><tr><th>Room</th><th>Students</th><th>Teachers</th></tr></table>
+        </div>
+
+        <!-- Student Courses -->
+        <div id="studentCoursesSection" class="section hidden">
+            <h2>My Courses</h2>
+            <table id="studentCoursesTable"><tr><th>Class</th><th>Teacher</th><th>Room</th><th>Start Time</th><th>End Time</th></tr></table>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
